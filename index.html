@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+
+  <title>家庭灯光控制</title>
+
+  <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #f5f5f5;
+
+      display: flex;
+      justify-content: center;
+      align-items: center;
+
+      height: 100vh;
+    }
+
+    .panel {
+      background: white;
+
+      width: 320px;
+
+      padding: 30px;
+
+      border-radius: 20px;
+
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+
+      text-align: center;
+    }
+
+    h2 {
+      margin-bottom: 30px;
+    }
+
+    #status {
+      margin-bottom: 25px;
+      font-size: 16px;
+    }
+
+    button {
+      width: 100%;
+
+      padding: 16px;
+
+      margin: 10px 0;
+
+      border: none;
+      border-radius: 12px;
+
+      font-size: 20px;
+
+      cursor: pointer;
+    }
+
+    #openBtn {
+      background: #4caf50;
+      color: white;
+    }
+
+    #closeBtn {
+      background: #e53935;
+      color: white;
+    }
+
+    button:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+  </style>
+
+</head>
+
+
+<body>
+
+  <div class="panel">
+
+    <h2>家庭灯光控制</h2>
+
+    <div id="status">
+      云端状态：正在连接...
+    </div>
+
+    <button
+      id="openBtn"
+      onclick="openLight()"
+      disabled
+    >
+      开灯
+    </button>
+
+    <button
+      id="closeBtn"
+      onclick="closeLight()"
+      disabled
+    >
+      关灯
+    </button>
+
+  </div>
+
+
+  <script>
+
+    const MQTT_HOST =
+      "wss://rf91ce33.ala.asia-southeast1.emqxsl.com:8084/mqtt";
+
+    const MQTT_USER = "webhome";
+
+    const MQTT_PASSWORD =
+      "030717";
+
+    const MQTT_TOPIC =
+      "home/light/cmd";
+
+
+    const clientId =
+      "webhome_" + Math.random().toString(16).substring(2, 10);
+
+
+    const options = {
+
+      clientId: clientId,
+
+      username: MQTT_USER,
+
+      password: MQTT_PASSWORD,
+
+      clean: true,
+
+      reconnectPeriod: 3000,
+
+      connectTimeout: 10000,
+
+      protocolVersion: 4
+
+    };
+
+
+    const client =
+      mqtt.connect(MQTT_HOST, options);
+
+
+    const statusText =
+      document.getElementById("status");
+
+    const openBtn =
+      document.getElementById("openBtn");
+
+    const closeBtn =
+      document.getElementById("closeBtn");
+
+
+    client.on("connect", function () {
+
+      console.log("MQTT connected");
+
+      statusText.innerText =
+        "云端状态：已连接";
+
+      openBtn.disabled = false;
+
+      closeBtn.disabled = false;
+
+    });
+
+
+    client.on("reconnect", function () {
+
+      statusText.innerText =
+        "云端状态：正在重新连接...";
+
+      openBtn.disabled = true;
+
+      closeBtn.disabled = true;
+
+    });
+
+
+    client.on("offline", function () {
+
+      statusText.innerText =
+        "云端状态：已离线";
+
+      openBtn.disabled = true;
+
+      closeBtn.disabled = true;
+
+    });
+
+
+    client.on("error", function (error) {
+
+      console.log(error);
+
+      statusText.innerText =
+        "云端状态：连接失败";
+
+    });
+
+
+    function openLight() {
+
+      if (!client.connected) {
+        return;
+      }
+
+      client.publish(
+        MQTT_TOPIC,
+        "ON",
+        {
+          qos: 0,
+          retain: false
+        }
+      );
+
+      console.log("发送：ON");
+    }
+
+
+    function closeLight() {
+
+      if (!client.connected) {
+        return;
+      }
+
+      client.publish(
+        MQTT_TOPIC,
+        "OFF",
+        {
+          qos: 0,
+          retain: false
+        }
+      );
+
+      console.log("发送：OFF");
+    }
+
+  </script>
+
+</body>
+
+</html>
